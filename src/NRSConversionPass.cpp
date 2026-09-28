@@ -124,6 +124,11 @@ class NRSIntrinsicSelector {
         }
     }
 
+    Function *sub() const { return op_to_intrinsic_.at(Instruction::FSub); }
+    Function *eq() const { return fcmp_to_intrinsic_.at(FCmpOpcode::FCMP_EQ); }
+    Function *lt() const { return fcmp_to_intrinsic_.at(FCmpOpcode::FCMP_LT); }
+    Function *le() const { return fcmp_to_intrinsic_.at(FCmpOpcode::FCMP_LE); }
+
     Function *get_intrinsic_replacement(const Instruction &I) const {
         if (I.isBinaryOp() || isa<CastInst>(I)) {
             auto it = op_to_intrinsic_.find(I.getOpcode());
@@ -223,6 +228,21 @@ class NRSConversionPass : public PassInfoMixin<NRSConversionPass> {
                                 Modified = true;
                             }
                         }
+                        continue;
+                    }
+
+                    // float literals used directly by any instruction (x + 1.0f, f(2.0f), ret ...)
+                    Modified |= convertFloatOperands(I, M.getContext());
+
+                    // double (and everything else) is left alone, the intrinsics are f32 only
+                    if (!isF32Op(I))
+                        continue;
+
+                    if (Value *expanded = expandUnsupported(I, intrinsic_selector, M.getContext())) {
+                        std::cout << "Expanding instruction " << I.getOpcodeName() << "\n";
+                        I.replaceAllUsesWith(expanded);
+                        I.eraseFromParent();
+                        Modified = true;
                     } else if (auto *intrinsic_replacement =
                                    intrinsic_selector.get_intrinsic_replacement(I)) {
                         IRBuilder builder(&I);
@@ -239,21 +259,24 @@ class NRSConversionPass : public PassInfoMixin<NRSConversionPass> {
 
                         switch (I.getOpcode()) {
                         case Instruction::FPToSI:
-                        case Instruction::FPToUI:
-                            // fpto{si, ui} return i32, but our intrinsics return i64, so we need to truncate the result back to i32
+                            // the intrinsics return i64, fit it to the actual result type
                             new_node = builder.CreateCall(intrinsic_replacement, operands);
-                            new_node = builder.CreateTrunc(new_node, builder.getInt32Ty());
+                            new_node = builder.CreateSExtOrTrunc(new_node, I.getType());
+                            break;
+                        case Instruction::FPToUI:
+                            new_node = builder.CreateCall(intrinsic_replacement, operands);
+                            new_node = builder.CreateZExtOrTrunc(new_node, I.getType());
                             break;
 
                         case Instruction::SIToFP:
-                        case Instruction::UIToFP: {
-                            // {si, ui}tofp take i32, but our intrinsics expect i64, so we need to extend the operand to i64
-                            Value *new_operand =
-                                builder.CreateSExt(operands[0], builder.getInt64Ty());
-                            operands[0] = new_operand;
+                            // the intrinsics take an i64 operand
+                            operands[0] = builder.CreateSExtOrTrunc(operands[0], builder.getInt64Ty());
                             new_node = builder.CreateCall(intrinsic_replacement, operands);
                             break;
-                        }
+                        case Instruction::UIToFP:
+                            operands[0] = builder.CreateZExtOrTrunc(operands[0], builder.getInt64Ty());
+                            new_node = builder.CreateCall(intrinsic_replacement, operands);
+                            break;
 
                         case Instruction::FCmp: {
                             // For FCmp, we need to convert the result to i1 (aka bool)
@@ -287,6 +310,71 @@ class NRSConversionPass : public PassInfoMixin<NRSConversionPass> {
     static void nrsslShutdown() { NRSSL::shutdown(); }
 
   private:
+    // True if I computes on f32 values, i.e. is something the intrinsics can replace.
+    static bool isF32Op(const Instruction &I) {
+        if (isa<FPToSIInst>(I) || isa<FPToUIInst>(I) || isa<FCmpInst>(I))
+            return I.getOperand(0)->getType()->isFloatTy();
+        return I.getType()->isFloatTy();
+    }
+
+    bool convertFloatOperands(Instruction &I, LLVMContext &Context) {
+        bool changed = false;
+        for (Use &U : I.operands()) {
+            auto *C = dyn_cast<ConstantFP>(U.get());
+            if (C && C->getType()->isFloatTy()) {
+                U.set(convertConstantFP(C, Context));
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    // Ops without a matching intrinsic, built from the ones we have:
+    //   fneg x      -> 0 - x
+    //   fabs x      -> x < 0 ? 0 - x : x
+    //   a > b       -> b < a,  a >= b -> b <= a,  a != b -> !(a == b)
+    // Returns nullptr if I is not one of them.
+    Value *expandUnsupported(Instruction &I, const NRSIntrinsicSelector &sel, LLVMContext &Context) {
+        IRBuilder<> b(&I);
+        auto zero = [&] {
+            return convertConstantFP(cast<ConstantFP>(ConstantFP::get(Type::getFloatTy(Context), 0.0)), Context);
+        };
+        auto cmp = [&](Function *f, Value *x, Value *y) {
+            return b.CreateTrunc(b.CreateCall(f, {x, y}), b.getInt1Ty());
+        };
+
+        if (I.getOpcode() == Instruction::FNeg)
+            return b.CreateCall(sel.sub(), {zero(), I.getOperand(0)});
+
+        if (auto *Call = dyn_cast<CallBase>(&I)) {
+            Function *callee = Call->getCalledFunction();
+            if (callee && callee->getIntrinsicID() == Intrinsic::fabs) {
+                Value *x = Call->getArgOperand(0);
+                Value *neg = b.CreateCall(sel.sub(), {zero(), x});
+                return b.CreateSelect(cmp(sel.lt(), x, zero()), neg, x);
+            }
+            return nullptr;
+        }
+
+        auto *FCmp = dyn_cast<FCmpInst>(&I);
+        if (!FCmp)
+            return nullptr;
+        Value *x = FCmp->getOperand(0), *y = FCmp->getOperand(1);
+        switch (FCmp->getPredicate()) {
+        case FCmpInst::FCMP_OGT:
+        case FCmpInst::FCMP_UGT:
+            return cmp(sel.lt(), y, x);
+        case FCmpInst::FCMP_OGE:
+        case FCmpInst::FCMP_UGE:
+            return cmp(sel.le(), y, x);
+        case FCmpInst::FCMP_ONE:
+        case FCmpInst::FCMP_UNE:
+            return b.CreateNot(cmp(sel.eq(), x, y));
+        default:
+            return nullptr;
+        }
+    }
+
     Constant *convertConstantFP(ConstantFP *FpConst, LLVMContext &Context) {
         APFloat OldAPF = FpConst->getValueAPF();
         APInt OldBits = OldAPF.bitcastToAPInt();
