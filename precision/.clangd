@@ -1,0 +1,4 @@
+CompileFlags:
+  Add: [-xc, -std=gnu11, -Iinclude, -Idata, -Itests, -I../include, -I../data, -I../tests, -DCAIAL_TRACE]
+Diagnostics:
+  Suppress: "asm_invalid_output_constraint"
