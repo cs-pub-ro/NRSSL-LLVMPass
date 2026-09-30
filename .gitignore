@@ -1,4 +1,6 @@
 .cache/
 build/
 *.o
+# lit tests are .ll files
 *.ll
+!test/**/*.ll
