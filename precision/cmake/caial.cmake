@@ -42,7 +42,8 @@ function(caial_add_test name source)
   set(out "${CMAKE_BINARY_DIR}/${name}")
   set(src "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
   file(MAKE_DIRECTORY "${out}")
-  set(deps "${src}")
+  # the tools too, so an LLVM rebuild regenerates everything
+  set(deps "${src}" "${CMAKE_C_COMPILER}")
   if(EXISTS "${CMAKE_SOURCE_DIR}/tests/${name}.gold.h")
     list(APPEND deps "${CMAKE_SOURCE_DIR}/tests/${name}.gold.h")
   endif()
@@ -63,7 +64,7 @@ function(caial_add_test name source)
       COMMAND ${OPT} -load-pass-plugin=${NRS_PASS_PLUGIN} "-passes=nrs-convert<${CAIAL_FLOAT_TYPE}>"
               -S -o "${out}/${name}.nrs.ll" "${ir}"
       COMMAND ${CAIAL_PY} check-ir "${out}/${name}.nrs.ll"
-      DEPENDS "${ir}" "${NRS_PASS_PLUGIN}" "${NRSSL_JARS}/nrssl.jar" "${CMAKE_SOURCE_DIR}/tools/caial.py"
+      DEPENDS "${ir}" "${OPT}" "${NRS_PASS_PLUGIN}" "${NRSSL_JARS}/nrssl.jar" "${CMAKE_SOURCE_DIR}/tools/caial.py"
       COMMENT "[${name}] NRS pass (${CAIAL_FLOAT_TYPE}) -> ${name}.nrs.ll"
       VERBATIM)
     set(ir "${out}/${name}.nrs.ll")
@@ -72,7 +73,7 @@ function(caial_add_test name source)
   add_custom_command(
     OUTPUT "${out}/${name}.opt.ll"
     COMMAND ${OPT} -passes=default<O${CAIAL_OPT_LEVEL}> -S -o "${out}/${name}.opt.ll" "${ir}"
-    DEPENDS "${ir}"
+    DEPENDS "${ir}" "${OPT}"
     COMMENT "[${name}] opt -O${CAIAL_OPT_LEVEL} -> ${name}.opt.ll"
     VERBATIM)
 
@@ -80,7 +81,7 @@ function(caial_add_test name source)
     OUTPUT "${out}/${name}.o" "${out}/${name}.s"
     COMMAND ${_caial_llc} -filetype=obj -o "${out}/${name}.o" "${out}/${name}.opt.ll"
     COMMAND ${_caial_llc} -filetype=asm -o "${out}/${name}.s" "${out}/${name}.opt.ll"
-    DEPENDS "${out}/${name}.opt.ll"
+    DEPENDS "${out}/${name}.opt.ll" "${LLC}"
     COMMENT "[${name}] llc -> ${name}.o, ${name}.s"
     VERBATIM)
 
