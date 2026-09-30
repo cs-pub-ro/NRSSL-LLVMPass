@@ -60,10 +60,8 @@ function(caial_add_test name source)
   if(NOT CAIAL_FLOAT_TYPE STREQUAL "ieee")
     add_custom_command(
       OUTPUT "${out}/${name}.nrs.ll"
-      COMMAND ${CMAKE_COMMAND} -E env LD_PRELOAD=${JVM_LIB} NRSSL_JARS=${NRSSL_JARS}
-              ${OPT} -load-pass-plugin=${NRS_PASS_PLUGIN} -passes=ieee-to-posit
-              --float_type=${CAIAL_FLOAT_TYPE} -S -o "${out}/${name}.nrs.ll" "${ir}"
-              > "${out}/${name}.pass.log"
+      COMMAND ${OPT} -load-pass-plugin=${NRS_PASS_PLUGIN} "-passes=nrs-convert<${CAIAL_FLOAT_TYPE}>"
+              -S -o "${out}/${name}.nrs.ll" "${ir}"
       COMMAND ${CAIAL_PY} check-ir "${out}/${name}.nrs.ll"
       DEPENDS "${ir}" "${NRS_PASS_PLUGIN}" "${NRSSL_JARS}/nrssl.jar" "${CMAKE_SOURCE_DIR}/tools/caial.py"
       COMMENT "[${name}] NRS pass (${CAIAL_FLOAT_TYPE}) -> ${name}.nrs.ll"

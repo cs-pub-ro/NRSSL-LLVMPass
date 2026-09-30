@@ -28,7 +28,6 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(PASS_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build" CACHE PATH "Build directory of the NRS pass")
 set(NRS_PASS_PLUGIN "${PASS_BUILD_DIR}/src/libNRSConversionPass.so" CACHE FILEPATH "NRS conversion pass plugin")
 set(NRSSL_JARS "${PASS_BUILD_DIR}/jars" CACHE PATH "Directory with nrssl.jar and the Scala library")
-set(JVM_LIB "/usr/lib/jvm/java-17-openjdk-amd64/lib/server/libjvm.so" CACHE FILEPATH "libjvm.so preloaded by opt")
 
 set(ROCKET_CONFIG "DefaultConfig" CACHE STRING "rocket-chip emulator config")
 set(EMULATOR "/workspace/shared/rocket-chip/out/emulator/freechips.rocketchip.system.TestHarness/freechips.rocketchip.system.${ROCKET_CONFIG}/verilator/elf.dest/emulator"

@@ -49,7 +49,7 @@ anything can fold constants or rewrite float operations with IEEE semantics.
 | File | Content |
 | --- | --- |
 | `<test>.ll` | clang output, unoptimized |
-| `<test>.nrs.ll` | after the NRS pass (NRS builds only), pass output in `<test>.pass.log` |
+| `<test>.nrs.ll` | after the NRS pass (NRS builds only) |
 | `<test>.opt.ll` | after `opt -O<n>` |
 | `<test>.s` | assembly |
 | `<test>.elf`, `<test>.dump` | binary and its disassembly |
