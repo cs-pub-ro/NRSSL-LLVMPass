@@ -18,11 +18,12 @@ find_program(SBT sbt REQUIRED)
 
 include(cmake/ProjectOptions.cmake)
 
+# NRSSL (git submodule) is built with sbt into build/jars. The pass finds the
+# jars there, $NRSSL_JARS overrides that at run time.
+set(NRSSL_JARS_DIR "${CMAKE_BINARY_DIR}/jars")
+
 add_subdirectory(src)
 
-# NRSSL (git submodule) is built with sbt. The pass loads nrssl.jar and the
-# Scala runtime from $NRSSL_JARS at run time, point it to build/jars.
-set(NRSSL_JARS_DIR "${CMAKE_BINARY_DIR}/jars")
 file(GLOB_RECURSE _nrssl_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/nrssl/src/main/*.scala)
 add_custom_command(
   OUTPUT "${NRSSL_JARS_DIR}/nrssl.jar" "${NRSSL_JARS_DIR}/scala-library-2.13.8.jar"

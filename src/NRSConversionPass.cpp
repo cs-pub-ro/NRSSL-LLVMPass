@@ -13,38 +13,33 @@
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "NRSSL.h"
+#include "NrsFormat.h"
+#include "nrssl/Encoder.h"
+#include "nrssl/Jvm.h"
+
+#include <cstdlib>
+#include <optional>
 
 using namespace llvm;
 
 namespace {
 
-cl::opt<NRSSL::Type> selected_nrs(
+cl::opt<nrs::Format> selected_nrs(
     "float_type", cl::desc("Choose the floating point representation"),
-    cl::init(NRSSL::Type::POSIT1),
-    cl::values(clEnumValN(NRSSL::Type::POSIT1, "posit1", "Posit1 representation"),
-               clEnumValN(NRSSL::Type::POSIT2, "posit2", "Posit2 representation"),
-               clEnumValN(NRSSL::Type::MORRIS, "morris", "Morris representation"),
-               clEnumValN(NRSSL::Type::MORRIS_HEB, "morrisHeb", "Morris HEB representation"),
-               clEnumValN(NRSSL::Type::MORRIS_UNARY_HEB, "morrisUnaryHeb",
+    cl::init(nrs::Format::Posit1),
+    cl::values(clEnumValN(nrs::Format::Posit1, "posit1", "Posit1 representation"),
+               clEnumValN(nrs::Format::Posit2, "posit2", "Posit2 representation"),
+               clEnumValN(nrs::Format::Morris, "morris", "Morris representation"),
+               clEnumValN(nrs::Format::MorrisHeb, "morrisHeb", "Morris HEB representation"),
+               clEnumValN(nrs::Format::MorrisUnaryHeb, "morrisUnaryHeb",
                           "Morris unary HEB representation"),
-               clEnumValN(NRSSL::Type::MORRIS_BIAS_HEB, "morrisBiasHeb",
+               clEnumValN(nrs::Format::MorrisBiasHeb, "morrisBiasHeb",
                           "Morris bias HEB representation")));
 
 class NRSIntrinsicSelector {
   public:
-    explicit NRSIntrinsicSelector(NRSSL::Type nrs, Module &M) {
-
-        static const std::unordered_map<NRSSL::Type, std::string> nrs_names = {
-            {NRSSL::Type::POSIT1, "posit1"},
-            {NRSSL::Type::POSIT2, "posit2"},
-            {NRSSL::Type::MORRIS, "morris"},
-            {NRSSL::Type::MORRIS_HEB, "morrisHeb"},
-            {NRSSL::Type::MORRIS_BIAS_HEB, "morrisBiasHeb"},
-            {NRSSL::Type::MORRIS_UNARY_HEB, "morrisUnaryHeb"},
-        };
-
-        const auto intrinsic_prefix = "llvm.riscv.nrssl.f32." + nrs_names.at(nrs) + ".";
+    explicit NRSIntrinsicSelector(nrs::Format nrs, Module &M) {
+        const auto intrinsic_prefix = "llvm.riscv.nrssl.f32." + std::string(nrs::info(nrs).name) + ".";
 
         // Map binary/unary ops to their corresponding intrinsics
         {
@@ -184,7 +179,8 @@ class NRSIntrinsicSelector {
 
 class NRSConversionPass : public PassInfoMixin<NRSConversionPass> {
 
-    NRSSL nrssl;
+    // set up by run(), only valid while it runs
+    const nrs::nrssl::Encoder *encoder = nullptr;
 
   public:
     NRSConversionPass() { std::cout << "Creating NRSConversionPass\n"; }
@@ -195,6 +191,16 @@ class NRSConversionPass : public PassInfoMixin<NRSConversionPass> {
         std::cout << "Running NRSConversionPass on " << M.getName().str() << "\n";
 
         bool Modified = false;
+
+        // NRSSL_JARS overrides the jars of the build
+        const char *jars = std::getenv("NRSSL_JARS");
+        auto jvm = nrs::nrssl::Jvm::get(jars != nullptr ? jars : NRS_DEFAULT_JARS_DIR);
+        if (!jvm)
+            report_fatal_error(jvm.takeError());
+        auto created = nrs::nrssl::Encoder::create(selected_nrs, *jvm);
+        if (!created)
+            report_fatal_error(created.takeError());
+        encoder = &*created;
 
         for (auto &Global : M.globals()) {
             if (Global.hasInitializer()) {
@@ -307,7 +313,6 @@ class NRSConversionPass : public PassInfoMixin<NRSConversionPass> {
 
     static bool isRequired() { return true; }
 
-    static void nrsslShutdown() { NRSSL::shutdown(); }
 
   private:
     // True if I computes on f32 values, i.e. is something the intrinsics can replace.
@@ -376,32 +381,15 @@ class NRSConversionPass : public PassInfoMixin<NRSConversionPass> {
     }
 
     Constant *convertConstantFP(ConstantFP *FpConst, LLVMContext &Context) {
-        APFloat OldAPF = FpConst->getValueAPF();
-        APInt OldBits = OldAPF.bitcastToAPInt();
+        // only f32 is converted, double stays IEEE
+        if (!FpConst->getType()->isFloatTy())
+            return FpConst;
 
-        if (FpConst->getType()->isFloatTy()) {
-            float IeeeValue;
-            memcpy(&IeeeValue, OldBits.getRawData(), sizeof(float));
-
-            uint32_t new_value = nrssl.convertDoubleToUint<uint32_t>(IeeeValue, selected_nrs);
-            APInt NewBits(32, new_value);
-
-            APFloat NewAPF(APFloat::IEEEsingle(), NewBits);
-            return ConstantFP::get(Context, NewAPF);
-        }
-
-        if (FpConst->getType()->isDoubleTy()) {
-            double IeeeValue;
-            memcpy(&IeeeValue, OldBits.getRawData(), sizeof(double));
-
-            uint64_t new_value = nrssl.convertDoubleToUint<uint64_t>(IeeeValue, selected_nrs);
-            APInt NewBits(64, new_value);
-
-            APFloat NewAPF(APFloat::IEEEdouble(), NewBits);
-            return ConstantFP::get(Context, NewAPF);
-        }
-
-        return nullptr;
+        auto bits = encoder->encode(FpConst->getValueAPF().convertToFloat());
+        if (!bits)
+            report_fatal_error(bits.takeError());
+        APFloat NewAPF(APFloat::IEEEsingle(), APInt(32, *bits));
+        return ConstantFP::get(Context, NewAPF);
     }
 
     Constant *processConstant(Constant *C, LLVMContext &Context) {
@@ -467,8 +455,6 @@ PassPluginLibraryInfo getNRSConversionPassPluginInfo() {
                     }
                     return false;
                 });
-
-                std::atexit(NRSConversionPass::nrsslShutdown);
             }};
 }
 

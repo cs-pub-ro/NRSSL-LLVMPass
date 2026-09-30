@@ -14,8 +14,6 @@ config.suffixes = [".ll"]
 
 config.environment["PATH"] = os.pathsep.join([config.llvm_tools_dir, config.environment.get("PATH", "")])
 
-# The pass starts a JVM through JNI.
-config.environment["NRSSL_JARS"] = config.nrssl_jars
-config.environment["LD_PRELOAD"] = config.jvm_library
+# The pass starts a JVM through JNI and finds the jars of the build itself.
 
 config.substitutions.append(("%opt_nrs", "opt -load-pass-plugin={}".format(config.plugin)))

@@ -10,7 +10,7 @@ if(NOT Catch2_FOUND)
 endif()
 include(Catch)
 
-add_executable(nrs_unittests NrsFormatTest.cpp NrsslTest.cpp)
+add_executable(nrs_unittests EncoderTest.cpp NrsFormatTest.cpp)
 # The plugin gets LLVM from opt, the tests have to link it themselves.
 llvm_map_components_to_libnames(nrs_llvm_libs core support)
 target_link_libraries(nrs_unittests PRIVATE nrs_core Catch2::Catch2WithMain ${nrs_llvm_libs}
