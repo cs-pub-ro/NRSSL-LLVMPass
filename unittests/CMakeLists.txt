@@ -10,8 +10,13 @@ if(NOT Catch2_FOUND)
 endif()
 include(Catch)
 
-add_executable(nrs_unittests NrsslTest.cpp)
-target_link_libraries(nrs_unittests PRIVATE nrs_core Catch2::Catch2WithMain ${JAVA_JVM_LIBRARY})
+add_executable(nrs_unittests NrsFormatTest.cpp NrsslTest.cpp)
+# The plugin gets LLVM from opt, the tests have to link it themselves.
+llvm_map_components_to_libnames(nrs_llvm_libs core support)
+target_link_libraries(nrs_unittests PRIVATE nrs_core Catch2::Catch2WithMain ${nrs_llvm_libs}
+                      ${JAVA_JVM_LIBRARY})
+# LLVM is built without RTTI; the tests keep exceptions, Catch2 needs them.
+target_compile_options(nrs_unittests PRIVATE -fno-rtti)
 nrs_target_options(nrs_unittests)
 if(NRS_ENABLE_UBSAN)
   target_compile_options(nrs_unittests PRIVATE -fsanitize=undefined -fno-sanitize-recover=undefined)
