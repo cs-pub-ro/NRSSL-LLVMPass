@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(NRS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+option(NRS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors (on in the presets)" OFF)
 option(NRS_ENABLE_CLANG_TIDY "Run clang-tidy on the project sources while building" OFF)
 option(NRS_ENABLE_UBSAN "Build the unit tests with the undefined behavior sanitizer" OFF)
 option(NRS_BUILD_TESTS "Build the lit and unit tests" ON)

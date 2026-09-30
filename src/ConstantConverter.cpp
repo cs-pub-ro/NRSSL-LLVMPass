@@ -2,6 +2,7 @@
 
 #include <llvm/ADT/APFloat.h>
 #include <llvm/ADT/APInt.h>
+#include <llvm/ADT/STLExtras.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -10,16 +11,20 @@
 
 namespace nrs {
 
+namespace {
+
+unsigned element_count(const llvm::Constant &aggregate) {
+  if (const auto *data = llvm::dyn_cast<llvm::ConstantDataSequential>(&aggregate)) {
+    return data->getNumElements();
+  }
+  return aggregate.getNumOperands();
+}
+
+} // namespace
+
 bool contains_float(const llvm::Type &type) {
-  if (type.isFloatTy()) {
-    return true;
-  }
-  for (const llvm::Type *element : type.subtypes()) {
-    if (contains_float(*element)) {
-      return true;
-    }
-  }
-  return false;
+  return type.isFloatTy() ||
+         llvm::any_of(type.subtypes(), [](const llvm::Type *t) { return contains_float(*t); });
 }
 
 llvm::Expected<llvm::Constant *> ConstantConverter::convert(llvm::Constant &constant) {
@@ -64,8 +69,8 @@ llvm::Expected<llvm::Constant *> ConstantConverter::convert_uncached(llvm::Const
   }
 
   llvm::SmallVector<llvm::Constant *, 16> elements;
-  for (unsigned i = 0; llvm::Constant *element = constant.getAggregateElement(i); ++i) {
-    auto converted = convert(*element);
+  for (unsigned i = 0; i < element_count(constant); ++i) {
+    auto converted = convert(*constant.getAggregateElement(i));
     if (!converted) {
       return converted.takeError();
     }

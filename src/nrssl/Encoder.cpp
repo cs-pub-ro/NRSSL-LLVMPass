@@ -78,7 +78,7 @@ llvm::Expected<Encoder> Encoder::create(Format format, Jvm &jvm) {
     return std::move(err);
   }
 
-  jobject rounding = env.CallStaticObjectMethod(cls, default_rounding);
+  jobject rounding = env.CallStaticObjectMethodA(cls, default_rounding, nullptr);
   if (auto err = take_exception(env, llvm::Twine("NRSSL default rounding of ") + nrs_class)) {
     return std::move(err);
   }
@@ -110,9 +110,9 @@ llvm::Expected<std::uint64_t> Encoder::encode(double value) const {
   jvalue input{};
   input.d = value;
   jobject nrs_value = apply(env, apply_double_, input);
-  auto *binary = nrs_value != nullptr
-                     ? static_cast<jstring>(env.CallObjectMethod(nrs_value, to_binary_string_))
-                     : nullptr;
+  jstring binary = nrs_value != nullptr
+                       ? as_string(env.CallObjectMethodA(nrs_value, to_binary_string_, nullptr))
+                       : nullptr;
   if (auto err = take_exception(env, llvm::Twine("encoding ") + std::format("{}", value) + " as " +
                                          llvm::StringRef(info_->name))) {
     return std::move(err);
@@ -144,7 +144,8 @@ llvm::Expected<double> Encoder::decode(std::uint64_t bits) const {
   jvalue input{};
   input.l = env.NewStringUTF(binary.c_str());
   jobject nrs_value = input.l != nullptr ? apply(env, apply_string_, input) : nullptr;
-  const double value = nrs_value != nullptr ? env.CallDoubleMethod(nrs_value, to_double_) : 0.0;
+  const double value =
+      nrs_value != nullptr ? env.CallDoubleMethodA(nrs_value, to_double_, nullptr) : 0.0;
   if (auto err = take_exception(env, llvm::Twine("decoding ") + binary + " as " +
                                          llvm::StringRef(info_->name))) {
     return std::move(err);

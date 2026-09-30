@@ -7,6 +7,7 @@
 
 #include <jni.h>
 
+#include <array>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -23,14 +24,19 @@ public:
   // directory.
   static llvm::Expected<Jvm &> get(const std::string &jars_dir);
 
+  // Only get() can create a Jvm (passkey).
+  class Key {
+    friend class Jvm;
+    Key() = default;
+  };
+  Jvm(Key /*key*/, JavaVM &vm, std::string jars_dir) : vm_(&vm), jars_dir_(std::move(jars_dir)) {}
+
   // The JNI environment of the calling thread, attaching it if needed.
   [[nodiscard]] llvm::Expected<JNIEnv &> env() const;
 
   [[nodiscard]] JavaVM &vm() const { return *vm_; }
 
 private:
-  Jvm(JavaVM &vm, std::string jars_dir) : vm_(&vm), jars_dir_(std::move(jars_dir)) {}
-
   JavaVM *vm_;
   std::string jars_dir_;
 };
@@ -95,6 +101,12 @@ private:
   JavaVM *vm_ = nullptr;
   jobject ref_ = nullptr;
 };
+
+// A JNI call returns jobject where the Java method returns a string.
+[[nodiscard]] inline jstring as_string(jobject object) {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): that's how JNI types work
+  return static_cast<jstring>(object);
+}
 
 // The characters of a Java string, released when it goes out of scope.
 class Utf8Chars {

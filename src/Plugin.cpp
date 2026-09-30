@@ -55,6 +55,10 @@ bool add_pass(llvm::StringRef name, llvm::ModulePassManager &passes,
 
 // NOLINTNEXTLINE(readability-identifier-naming): entry point looked up by LLVM
 extern "C" LLVM_ATTRIBUTE_WEAK llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "NRSConversion", LLVM_VERSION_STRING,
-          [](llvm::PassBuilder &builder) { builder.registerPipelineParsingCallback(add_pass); }};
+  return {.APIVersion = LLVM_PLUGIN_API_VERSION,
+          .PluginName = "NRSConversion",
+          .PluginVersion = LLVM_VERSION_STRING,
+          .RegisterPassBuilderCallbacks = [](llvm::PassBuilder &builder) {
+            builder.registerPipelineParsingCallback(add_pass);
+          }};
 }

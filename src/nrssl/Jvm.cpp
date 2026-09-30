@@ -5,7 +5,7 @@
 #include <jni.h>
 
 #include <array>
-#include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -51,7 +51,7 @@ llvm::Expected<JavaVM &> start_vm(const std::string &jars_dir) {
 } // namespace
 
 llvm::Expected<Jvm &> Jvm::get(const std::string &jars_dir) {
-  static std::unique_ptr<Jvm> jvm;
+  static std::optional<Jvm> jvm;
   if (!jvm) {
     JavaVM *vm = existing_vm();
     if (vm == nullptr) {
@@ -61,7 +61,7 @@ llvm::Expected<Jvm &> Jvm::get(const std::string &jars_dir) {
       }
       vm = &*started;
     }
-    jvm.reset(new Jvm(*vm, jars_dir));
+    jvm.emplace(Key{}, *vm, jars_dir);
   } else if (jvm->jars_dir_ != jars_dir) {
     return error("the NRSSL JVM already runs with the jars from " + jvm->jars_dir_ +
                  ", can't switch to " + jars_dir);
@@ -94,7 +94,7 @@ llvm::Error take_exception(JNIEnv &env, const llvm::Twine &context) {
       object_class != nullptr ? env.GetMethodID(object_class, "toString", "()Ljava/lang/String;")
                               : nullptr;
   if (to_string != nullptr) {
-    auto *text = static_cast<jstring>(env.CallObjectMethod(exception, to_string));
+    jstring text = as_string(env.CallObjectMethodA(exception, to_string, nullptr));
     if (text != nullptr) {
       const Utf8Chars chars(env, text);
       if (chars.ok()) {
