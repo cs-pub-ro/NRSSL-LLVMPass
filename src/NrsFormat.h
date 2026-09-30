@@ -68,10 +68,13 @@ struct FormatInfo {
 #define NRS_INTRINSICS(fmt)                                                                        \
   std::array<llvm::Intrinsic::ID, op_count> {                                                      \
     llvm::Intrinsic::riscv_nrssl_f32_##fmt##_add, llvm::Intrinsic::riscv_nrssl_f32_##fmt##_sub,    \
-        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_mul, llvm::Intrinsic::riscv_nrssl_f32_##fmt##_div, \
-        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_min, llvm::Intrinsic::riscv_nrssl_f32_##fmt##_max, \
-        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_sqrt, llvm::Intrinsic::riscv_nrssl_f32_##fmt##_eq, \
-        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_lt, llvm::Intrinsic::riscv_nrssl_f32_##fmt##_le,   \
+        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_mul,                                              \
+        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_div,                                              \
+        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_min,                                              \
+        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_max,                                              \
+        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_sqrt,                                             \
+        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_eq, llvm::Intrinsic::riscv_nrssl_f32_##fmt##_lt,  \
+        llvm::Intrinsic::riscv_nrssl_f32_##fmt##_le,                                               \
         llvm::Intrinsic::riscv_nrssl_f32_##fmt##_cvtToInt,                                         \
         llvm::Intrinsic::riscv_nrssl_f32_##fmt##_cvtToUInt,                                        \
         llvm::Intrinsic::riscv_nrssl_f32_##fmt##_cvtFromInt,                                       \

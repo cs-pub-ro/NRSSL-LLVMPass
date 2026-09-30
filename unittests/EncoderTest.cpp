@@ -1,13 +1,13 @@
 // NRSSL through the encoder: known encodings and round trips.
 
-#include "NrsFormat.h"
 #include "nrssl/Encoder.h"
+
+#include "NrsFormat.h"
 #include "nrssl/Jvm.h"
 
 #include <llvm/Support/Error.h>
 
 #include <catch2/catch_test_macros.hpp>
-
 #include <cstdint>
 #include <cstdlib>
 #include <string>

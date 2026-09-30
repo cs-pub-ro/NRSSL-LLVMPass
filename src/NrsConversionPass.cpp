@@ -26,8 +26,8 @@ namespace {
 
 void diagnose(const llvm::Instruction &inst, const llvm::Twine &message,
               llvm::DiagnosticSeverity severity) {
-  inst.getContext().diagnose(llvm::DiagnosticInfoUnsupported(
-      *inst.getFunction(), message, inst.getDebugLoc(), severity));
+  inst.getContext().diagnose(
+      llvm::DiagnosticInfoUnsupported(*inst.getFunction(), message, inst.getDebugLoc(), severity));
 }
 
 // Errors that are not about one instruction (JVM, NRSSL, the module flag).
@@ -41,7 +41,8 @@ llvm::PreservedAnalyses NrsConversionPass::run(llvm::Module &module,
                                                llvm::ModuleAnalysisManager & /*analyses*/) {
   const FormatInfo &format = info(format_);
 
-  if (const auto *flag = llvm::dyn_cast_or_null<llvm::MDString>(module.getModuleFlag(format_flag))) {
+  if (const auto *flag =
+          llvm::dyn_cast_or_null<llvm::MDString>(module.getModuleFlag(format_flag))) {
     module_error(module, "the module was already converted to " + flag->getString());
     return llvm::PreservedAnalyses::all();
   }
@@ -88,8 +89,9 @@ llvm::PreservedAnalyses NrsConversionPass::run(llvm::Module &module,
         }
         break;
       case Lowering::ExternalCall:
-        diagnose(inst, "the called function takes or returns f32 but is not in this module, "
-                       "it computes in IEEE unless it was converted too",
+        diagnose(inst,
+                 "the called function takes or returns f32 but is not in this module, "
+                 "it computes in IEEE unless it was converted too",
                  llvm::DS_Warning);
         break;
       case Lowering::Replaced:

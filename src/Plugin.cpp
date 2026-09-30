@@ -27,8 +27,8 @@ llvm::Expected<nrs::Format> parse_format(llvm::StringRef parameter) {
     names += format.name;
   }
   return llvm::createStringError(llvm::inconvertibleErrorCode(),
-                                 "unknown NRS format '" + parameter + "', expected one of: " +
-                                     names);
+                                 "unknown NRS format '" + parameter +
+                                     "', expected one of: " + names);
 }
 
 // NRSSL_JARS overrides the jars of the build.

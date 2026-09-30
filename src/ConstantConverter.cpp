@@ -51,7 +51,8 @@ llvm::Expected<llvm::Constant *> ConstantConverter::convert_uncached(llvm::Const
     if (!bits) {
       return bits.takeError();
     }
-    const llvm::APFloat value(llvm::APFloat::IEEEsingle(), llvm::APInt(nrssl::Encoder::width, *bits));
+    const llvm::APFloat value(llvm::APFloat::IEEEsingle(),
+                              llvm::APInt(nrssl::Encoder::width, *bits));
     return llvm::ConstantFP::get(constant.getContext(), value);
   }
 
@@ -61,8 +62,8 @@ llvm::Expected<llvm::Constant *> ConstantConverter::convert_uncached(llvm::Const
   }
 
   // Arrays, structs and vectors: convert the elements and rebuild.
-  const bool is_aggregate =
-      llvm::isa<llvm::ConstantAggregate>(constant) || llvm::isa<llvm::ConstantDataSequential>(constant);
+  const bool is_aggregate = llvm::isa<llvm::ConstantAggregate>(constant) ||
+                            llvm::isa<llvm::ConstantDataSequential>(constant);
   if (!is_aggregate) {
     // e.g. a constant expression: nothing to convert in it as a value
     return &constant;

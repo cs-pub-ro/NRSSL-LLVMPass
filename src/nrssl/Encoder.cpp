@@ -68,8 +68,7 @@ llvm::Expected<Encoder> Encoder::create(Format format, Jvm &jvm) {
   const std::string rounding_signature = "()Lro/upb/nrs/sl/RoundingType;";
   jmethodID default_rounding =
       env.GetStaticMethodID(cls, "default_rounding", rounding_signature.c_str());
-  encoder.apply_double_ =
-      env.GetStaticMethodID(cls, "apply", apply_signature(info, "D").c_str());
+  encoder.apply_double_ = env.GetStaticMethodID(cls, "apply", apply_signature(info, "D").c_str());
   encoder.apply_string_ =
       env.GetStaticMethodID(cls, "apply", apply_signature(info, "Ljava/lang/String;").c_str());
   encoder.to_binary_string_ = env.GetMethodID(value_cls, "toBinaryString", "()Ljava/lang/String;");
