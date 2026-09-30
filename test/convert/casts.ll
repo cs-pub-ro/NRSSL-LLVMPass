@@ -1,6 +1,6 @@
 ; Int <-> float conversions. The intrinsics work on i64, the pass extends or
 ; truncates to the actual integer type.
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=posit1 -S %s | FileCheck %s
+; RUN: %opt_nrs -passes='nrs-convert<posit1>' -S %s | FileCheck %s
 
 ; CHECK-LABEL: define i32 @fptosi_i32(
 ; CHECK: [[R:%.*]] = call i64 @llvm.riscv.nrssl.f32.posit1.cvtToInt(float %x)

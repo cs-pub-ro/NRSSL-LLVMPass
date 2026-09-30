@@ -1,7 +1,7 @@
 # lit configuration for the NRS pass tests.
 #
 # %opt_nrs runs opt with the plugin loaded, e.g.
-#   RUN: %opt_nrs -passes=ieee-to-posit --float_type=posit1 -S %s | FileCheck %s
+#   RUN: %opt_nrs -passes='nrs-convert<posit1>' -S %s | FileCheck %s
 # opt, FileCheck and not come from the LLVM build the pass is built against.
 
 import os

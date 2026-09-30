@@ -2,17 +2,17 @@
 ; ONE and MTWOHALF are 1.0 and -2.5 in that format, printed as IEEE floats.
 ; (checked with NRSSL's decoder: they decode back to exactly 1.0 and -2.5)
 ;
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=posit1 -S %s | FileCheck %s -DFMT=posit1 \
+; RUN: %opt_nrs -passes='nrs-convert<posit1>' -S %s | FileCheck %s -DFMT=posit1 \
 ; RUN:   -DONE=2.000000e+00 -DMTWOHALF=0xBEC0000000000000
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=posit2 -S %s | FileCheck %s -DFMT=posit2 \
+; RUN: %opt_nrs -passes='nrs-convert<posit2>' -S %s | FileCheck %s -DFMT=posit2 \
 ; RUN:   -DONE=2.000000e+00 -DMTWOHALF=0xBF60000000000000
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=morris -S %s | FileCheck %s -DFMT=morris \
+; RUN: %opt_nrs -passes='nrs-convert<morris>' -S %s | FileCheck %s -DFMT=morris \
 ; RUN:   -DONE=0x3880000000000000 -DMTWOHALF=0xB850000000000000
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=morrisHeb -S %s | FileCheck %s -DFMT=morrisHeb \
+; RUN: %opt_nrs -passes='nrs-convert<morrisHeb>' -S %s | FileCheck %s -DFMT=morrisHeb \
 ; RUN:   -DONE=0x3880000000000000 -DMTWOHALF=0xB920000000000000
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=morrisBiasHeb -S %s | FileCheck %s -DFMT=morrisBiasHeb \
+; RUN: %opt_nrs -passes='nrs-convert<morrisBiasHeb>' -S %s | FileCheck %s -DFMT=morrisBiasHeb \
 ; RUN:   -DONE=0x3F00000000000000 -DMTWOHALF=-3.200000e+01
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=morrisUnaryHeb -S %s | FileCheck %s -DFMT=morrisUnaryHeb \
+; RUN: %opt_nrs -passes='nrs-convert<morrisUnaryHeb>' -S %s | FileCheck %s -DFMT=morrisUnaryHeb \
 ; RUN:   -DONE=2.000000e+00 -DMTWOHALF=0xC480000000000000
 
 ; CHECK: @scalar = global float [[ONE]]

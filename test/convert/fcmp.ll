@@ -1,6 +1,6 @@
 ; Compares: eq/lt/le map directly, the others are built from them.
 ; The intrinsics return i64, the pass truncates to i1.
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=posit1 -S %s | FileCheck %s
+; RUN: %opt_nrs -passes='nrs-convert<posit1>' -S %s | FileCheck %s
 
 ; CHECK-LABEL: define i1 @oeq(
 ; CHECK: [[R:%.*]] = call i64 @llvm.riscv.nrssl.f32.posit1.eq(float %x, float %y)

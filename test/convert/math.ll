@@ -1,5 +1,5 @@
 ; min/max/sqrt map to intrinsics, fneg and fabs are built from sub and lt.
-; RUN: %opt_nrs -passes=ieee-to-posit --float_type=posit1 -S %s | FileCheck %s
+; RUN: %opt_nrs -passes='nrs-convert<posit1>' -S %s | FileCheck %s
 
 ; CHECK-LABEL: define float @min(
 ; CHECK: call float @llvm.riscv.nrssl.f32.posit1.min(float %x, float %y)
