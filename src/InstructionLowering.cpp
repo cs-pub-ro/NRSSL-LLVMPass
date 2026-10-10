@@ -1,7 +1,7 @@
 #include "InstructionLowering.h"
 
 #include "ConstantConverter.h"
-#include "NrsFormat.h"
+#include "nrs/NrsFormat.h"
 
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/STLExtras.h>

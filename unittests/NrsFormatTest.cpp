@@ -1,6 +1,6 @@
 // The format table has to match the intrinsics of the LLVM fork.
 
-#include "NrsFormat.h"
+#include "nrs/NrsFormat.h"
 
 #include <llvm/IR/Intrinsics.h>
 

@@ -1,6 +1,6 @@
 #include "nrssl/Encoder.h"
 
-#include "NrsFormat.h"
+#include "nrs/NrsFormat.h"
 #include "nrssl/Jvm.h"
 
 #include <llvm/ADT/Twine.h>

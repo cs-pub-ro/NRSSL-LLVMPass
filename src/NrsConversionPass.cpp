@@ -1,8 +1,8 @@
-#include "NrsConversionPass.h"
+#include "nrs/NrsConversionPass.h"
 
 #include "ConstantConverter.h"
 #include "InstructionLowering.h"
-#include "NrsFormat.h"
+#include "nrs/NrsFormat.h"
 #include "nrssl/Encoder.h"
 #include "nrssl/Jvm.h"
 

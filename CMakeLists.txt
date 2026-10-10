@@ -1,9 +1,14 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.28)
+
+if (NOT CMAKE_HOST_LINUX)
+  message(FATAL_ERROR "This project is only meant for Linux")
+endif()
+
 project(NRSConversionPass LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+if (NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
+  message(FATAL_ERROR "This project requires Clang or GCC; the compiler is ${CMAKE_CXX_COMPILER_ID}")
+endif()
 
 option(NRS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors (on in the presets)" OFF)
 option(NRS_ENABLE_CLANG_TIDY "Run clang-tidy on the project sources while building" OFF)
@@ -24,12 +29,10 @@ set(NRSSL_JARS_DIR "${CMAKE_BINARY_DIR}/jars")
 
 add_subdirectory(src)
 
-file(GLOB_RECURSE _nrssl_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/nrssl/src/main/*.scala)
 add_custom_command(
   OUTPUT "${NRSSL_JARS_DIR}/nrssl.jar" "${NRSSL_JARS_DIR}/scala-library-2.13.8.jar"
   COMMAND ${CMAKE_COMMAND} -DSBT=${SBT} -DSRC=${CMAKE_SOURCE_DIR}/nrssl -DOUT=${NRSSL_JARS_DIR}
           -P ${CMAKE_SOURCE_DIR}/cmake/BuildNRSSL.cmake
-  DEPENDS ${_nrssl_sources} ${CMAKE_SOURCE_DIR}/nrssl/build.sbt ${CMAKE_SOURCE_DIR}/cmake/BuildNRSSL.cmake
   COMMENT "Building NRSSL with sbt"
   VERBATIM)
 add_custom_target(nrssl_jars ALL DEPENDS "${NRSSL_JARS_DIR}/nrssl.jar")

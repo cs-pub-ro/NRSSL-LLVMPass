@@ -2,7 +2,7 @@
 
 #include "nrssl/Encoder.h"
 
-#include "NrsFormat.h"
+#include "nrs/NrsFormat.h"
 #include "nrssl/Jvm.h"
 
 #include <llvm/Support/Error.h>

@@ -1,8 +1,8 @@
 // Registers the pass as nrs-convert<format>, e.g.
 //   opt -load-pass-plugin=libNRSConversionPass.so -passes='nrs-convert<posit1>'
 
-#include "NrsConversionPass.h"
-#include "NrsFormat.h"
+#include "nrs/NrsConversionPass.h"
+#include "nrs/NrsFormat.h"
 
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Passes/PassBuilder.h>

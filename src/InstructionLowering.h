@@ -3,7 +3,7 @@
 #pragma once
 
 #include "ConstantConverter.h"
-#include "NrsFormat.h"
+#include "nrs/NrsFormat.h"
 
 #include <llvm/IR/Instruction.h>
 #include <llvm/Support/Error.h>
