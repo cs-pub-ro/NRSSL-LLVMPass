@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y \
     verilator \
     # LLVM/Clang for building the pass
     clang-19 llvm-19 lld-19 llvm-19-dev libclang-19-dev \
-    python3 catch2 clang-tidy-19 clang-format-19 \
+    python3 catch2 clang-tidy-19 clang-format-19 ccache \
     vim less tree \
     && rm -rf /var/lib/apt/lists/*
 
