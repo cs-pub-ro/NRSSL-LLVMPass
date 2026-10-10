@@ -10,7 +10,7 @@ option(NRS_ENABLE_CLANG_TIDY "Run clang-tidy on the project sources while buildi
 option(NRS_ENABLE_UBSAN "Build the unit tests with the undefined behavior sanitizer" OFF)
 option(NRS_BUILD_TESTS "Build the lit and unit tests" ON)
 
-set(LLVM_DIR "/workspace/shared/llvm-project/build/lib/cmake/llvm" CACHE PATH
+set(LLVM_DIR "/workspace/shared/llvm-project/build/nrs/lib/cmake/llvm" CACHE PATH
     "CMake dir of the LLVM build with the NRSSL intrinsics")
 find_package(LLVM REQUIRED CONFIG)
 find_package(JNI REQUIRED)

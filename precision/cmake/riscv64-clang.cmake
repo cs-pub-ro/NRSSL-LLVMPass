@@ -4,7 +4,7 @@
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR riscv64)
 
-set(LLVM_BIN_DIR "/workspace/shared/llvm-project/build/bin" CACHE PATH "Directory with clang, opt and llc")
+set(LLVM_BIN_DIR "/workspace/shared/llvm-project/build/nrs/bin" CACHE PATH "Directory with clang, opt and llc")
 set(RISCV_GCC_TOOLCHAIN "/opt/riscv" CACHE PATH "RISC-V GCC toolchain (newlib, libgcc, binutils)")
 
 set(CMAKE_C_COMPILER "${LLVM_BIN_DIR}/clang")
