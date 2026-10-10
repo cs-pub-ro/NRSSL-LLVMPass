@@ -1,5 +1,10 @@
 # lit + FileCheck tests of the pass: run opt with the plugin on small IR files.
-find_program(LLVM_LIT NAMES llvm-lit lit HINTS ${LLVM_TOOLS_BINARY_DIR} REQUIRED)
+find_program(LLVM_LIT
+    NAMES llvm-lit lit lit.py
+    HINTS
+        ${LLVM_TOOLS_BINARY_DIR}
+    REQUIRED
+)
 
 # the pass needs libjvm preloaded, FindJNI knows where it is
 set(JVM_LIBRARY "${JAVA_JVM_LIBRARY}")
