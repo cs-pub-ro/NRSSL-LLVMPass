@@ -38,7 +38,7 @@ def decode(bits, float_type, width, jars):
         return [ieee_to_float(b, width) for b in bits]
     if not jars:
         sys.exit("--jars is needed to decode %s values" % float_type)
-    cp = os.pathsep.join(os.path.join(jars, j) for j in ("nrssl.jar", "scala-library-2.13.8.jar"))
+    cp = os.pathsep.join(os.path.join(jars, j) for j in ("nrssl.jar", "scala-library.jar"))
     out = subprocess.run(
         ["java", "-cp", cp, os.path.join(TOOLS_DIR, "NrsDecode.java"), float_type, str(width)],
         input="\n".join("%x" % b for b in bits),

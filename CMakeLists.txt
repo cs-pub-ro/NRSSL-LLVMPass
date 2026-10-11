@@ -26,16 +26,23 @@ include(cmake/ProjectOptions.cmake)
 # NRSSL (git submodule) is built with sbt into build/jars. The pass finds the
 # jars there, $NRSSL_JARS overrides that at run time.
 set(NRSSL_JARS_DIR "${CMAKE_BINARY_DIR}/jars")
+set(NRSSL_JAR "nrssl.jar")
+set(SCALA_LIB_JAR "scala-library.jar")
 
 add_subdirectory(src)
 
 add_custom_command(
-  OUTPUT "${NRSSL_JARS_DIR}/nrssl.jar" "${NRSSL_JARS_DIR}/scala-library-2.13.8.jar"
-  COMMAND ${CMAKE_COMMAND} -DSBT=${SBT} -DSRC=${CMAKE_SOURCE_DIR}/nrssl -DOUT=${NRSSL_JARS_DIR}
+  OUTPUT "${NRSSL_JARS_DIR}/${NRSSL_JAR}" "${NRSSL_JARS_DIR}/${SCALA_LIB_JAR}"
+  COMMAND ${CMAKE_COMMAND}
+          -DSBT=${SBT}
+          -DSRC=${CMAKE_SOURCE_DIR}/nrssl
+          -DOUT=${NRSSL_JARS_DIR}
+          -DNRSSL_JAR=${NRSSL_JAR}
+          -DSCALA_LIB_JAR=${SCALA_LIB_JAR}
           -P ${CMAKE_SOURCE_DIR}/cmake/BuildNRSSL.cmake
   COMMENT "Building NRSSL with sbt"
   VERBATIM)
-add_custom_target(nrssl_jars ALL DEPENDS "${NRSSL_JARS_DIR}/nrssl.jar")
+add_custom_target(nrssl_jars ALL DEPENDS "${NRSSL_JARS_DIR}/${NRSSL_JAR}")
 
 if(NRS_BUILD_TESTS)
   enable_testing()

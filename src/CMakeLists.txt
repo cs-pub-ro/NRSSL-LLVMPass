@@ -25,6 +25,9 @@ target_sources(nrs_core
             ${PROJECT_SOURCE_DIR}/include/nrs/NrsFormat.h
 )
 set_target_properties(nrs_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_compile_definitions(nrs_core
+    PRIVATE NRSSL_JAR="${NRSSL_JAR}"
+    PRIVATE SCALA_LIB_JAR="${SCALA_LIB_JAR}")
 nrs_configure_target_options(nrs_core)
 nrs_configure_llvm_options(nrs_core)
 

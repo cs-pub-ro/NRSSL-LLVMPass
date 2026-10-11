@@ -13,6 +13,19 @@ namespace nrs::nrssl {
 
 namespace {
 
+#ifdef SCALA_LIB_JAR
+constexpr std::string_view scala_library_jar = SCALA_LIB_JAR;
+#else
+constexpr std::string_view scala_library_jar = "scala-library-2.13.8.jar";
+#endif
+
+#ifdef NRSSL_JAR
+constexpr std::string_view nrssl_jar = NRSSL_JAR;
+#else
+constexpr std::string_view nrssl_jar = "nrssl.jar";
+#endif
+
+
 llvm::Error error(const llvm::Twine &message) {
   return llvm::createStringError(llvm::inconvertibleErrorCode(), message);
 }
@@ -30,7 +43,7 @@ JavaVM *existing_vm() {
 llvm::Expected<JavaVM &> start_vm(const std::string &jars_dir) {
   // JavaVMOption wants a mutable string
   std::string class_path =
-      "-Djava.class.path=" + jars_dir + "/scala-library-2.13.8.jar:" + jars_dir + "/nrssl.jar";
+      "-Djava.class.path=" + jars_dir + "/" + std::string(scala_library_jar) + ":" + jars_dir + "/" + std::string(nrssl_jar);
   std::array<JavaVMOption, 1> options{};
   options[0].optionString = class_path.data();
 
