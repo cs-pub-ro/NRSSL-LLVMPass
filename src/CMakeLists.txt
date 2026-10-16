@@ -1,60 +1,41 @@
-cmake_minimum_required(VERSION 3.10)
+# Everything except the plugin entry point, shared by the plugin and the unit tests.
+add_library(nrs_core STATIC)
+target_sources(nrs_core
+    PRIVATE
+        ConstantConverter.cpp
+        InstructionLowering.cpp
+        NrsConversionPass.cpp
+        nrssl/Encoder.cpp
+        nrssl/Jvm.cpp
 
-set(CMAKE_C_COMPILER clang-19)
-set(CMAKE_CXX_COMPILER clang++-19)
+    PRIVATE
+        FILE_SET internalHeaders
+        TYPE HEADERS
+        FILES
+            ConstantConverter.h
+            InstructionLowering.h
+            nrssl/Encoder.h
+            nrssl/Jvm.h
+            nrssl/JvmHelpers.h
 
-project(NRSConversionPass LANGUAGES CXX C)
-
-SET(CMAKE_CXX_FLAGS "-Wall -fno-rtti -fPIC")
-
-SET(NRSSL_PATH "${CMAKE_SOURCE_DIR}/jars")
-
-# Find LLVM
-find_package(LLVM REQUIRED CONFIG)
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
-
-# Find JNI
-find_package(JNI REQUIRED)
-include_directories(${JNI_INCLUDE_DIRS})
-
-# Add the LLVM pass
-add_library(NRSConversionPass MODULE NRSConversionPass.cpp NRSSL.cpp)
-
-# Generate LLVM IR from C file
-add_custom_command(
-    OUTPUT sample.ll
-    COMMAND ${CMAKE_C_COMPILER} -S -emit-llvm ${CMAKE_SOURCE_DIR}/test/sample.c -o sample.ll
-    DEPENDS ${CMAKE_SOURCE_DIR}/test/sample.c
-    COMMENT "Generating LLVM IR from sample.c"
+    PUBLIC
+        FILE_SET HEADERS
+        BASE_DIRS ${PROJECT_SOURCE_DIR}/include
+        FILES
+            ${PROJECT_SOURCE_DIR}/include/nrs/NrsConversionPass.h
+            ${PROJECT_SOURCE_DIR}/include/nrs/NrsFormat.h
 )
+set_target_properties(nrs_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_compile_definitions(nrs_core
+    PRIVATE NRSSL_JAR="${NRSSL_JAR}"
+    PRIVATE SCALA_LIB_JAR="${SCALA_LIB_JAR}")
+nrs_configure_target_options(nrs_core)
+nrs_configure_llvm_options(nrs_core)
 
-# Run LLVM pass on sample.ll
-add_custom_command(
-    OUTPUT processed.ll
-    COMMAND "NRSSL_JARS=${NRSSL_PATH}"
-            "LD_PRELOAD=$ENV{JAVA_HOME}/lib/server/libjvm.so"
-            "${LLVM_TOOLS_BINARY_DIR}/opt"
-            "-load-pass-plugin=${CMAKE_CURRENT_BINARY_DIR}/libNRSConversionPass.so"
-            "-passes=ieee-to-posit"
-            "-S" "sample.ll"
-            "-o" "processed.ll"
-    DEPENDS sample.ll NRSConversionPass
-    COMMENT "Running LLVM pass on sample.ll"
-)
-
-# Compile processed.ll to an object file
-add_custom_command(
-    OUTPUT processed.o
-    COMMAND llc -filetype=obj --relocation-model=pic processed.ll -o processed.o
-    DEPENDS processed.ll
-    COMMENT "Compiling processed.ll to object file"
-)
-
-# Create the final executable
-add_executable(TestPass TestPass.cpp NRSSL.cpp processed.o)
-
-set_target_properties(TestPass PROPERTIES COMPILE_FLAGS "-fPIE")
-set_target_properties(TestPass PROPERTIES LINK_FLAGS "-fPIE -pie")
-
-target_link_libraries(TestPass ${JNI_LIBRARIES})
+add_library(NRSConversionPass MODULE Plugin.cpp)
+# libjvm is linked directly (with a runpath to it), no LD_PRELOAD needed
+target_link_libraries(NRSConversionPass PRIVATE nrs_core ${JAVA_JVM_LIBRARY})
+# NRSSL_JARS can override this at run time
+target_compile_definitions(NRSConversionPass PRIVATE NRS_DEFAULT_JARS_DIR="${NRSSL_JARS_DIR}")
+nrs_configure_target_options(NRSConversionPass)
+nrs_configure_llvm_options(NRSConversionPass)

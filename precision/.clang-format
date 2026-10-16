@@ -1,0 +1,5 @@
+# .clang-format
+IndentWidth: 2
+ColumnLimit: 160
+NamespaceIndentation: Inner
+BreakTemplateDeclarations: Yes

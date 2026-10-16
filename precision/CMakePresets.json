@@ -1,0 +1,184 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "ieee",
+      "inherits": "base",
+      "cacheVariables": {
+        "CAIAL_FLOAT_TYPE": "ieee"
+      }
+    },
+    {
+      "name": "ieee64",
+      "inherits": "base",
+      "cacheVariables": {
+        "CAIAL_FLOAT_TYPE": "ieee",
+        "CAIAL_FP_BITS": "64"
+      }
+    },
+    {
+      "name": "posit1",
+      "inherits": "base",
+      "cacheVariables": {
+        "CAIAL_FLOAT_TYPE": "posit1"
+      }
+    },
+    {
+      "name": "posit2",
+      "inherits": "base",
+      "cacheVariables": {
+        "CAIAL_FLOAT_TYPE": "posit2"
+      }
+    },
+    {
+      "name": "morris",
+      "inherits": "base",
+      "cacheVariables": {
+        "CAIAL_FLOAT_TYPE": "morris"
+      }
+    },
+    {
+      "name": "morrisHeb",
+      "inherits": "base",
+      "cacheVariables": {
+        "CAIAL_FLOAT_TYPE": "morrisHeb"
+      }
+    },
+    {
+      "name": "morrisUnaryHeb",
+      "inherits": "base",
+      "cacheVariables": {
+        "CAIAL_FLOAT_TYPE": "morrisUnaryHeb"
+      }
+    },
+    {
+      "name": "morrisBiasHeb",
+      "inherits": "base",
+      "cacheVariables": {
+        "CAIAL_FLOAT_TYPE": "morrisBiasHeb"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ieee",
+      "configurePreset": "ieee"
+    },
+    {
+      "name": "ieee64",
+      "configurePreset": "ieee64"
+    },
+    {
+      "name": "posit1",
+      "configurePreset": "posit1"
+    },
+    {
+      "name": "posit2",
+      "configurePreset": "posit2"
+    },
+    {
+      "name": "morris",
+      "configurePreset": "morris"
+    },
+    {
+      "name": "morrisHeb",
+      "configurePreset": "morrisHeb"
+    },
+    {
+      "name": "morrisUnaryHeb",
+      "configurePreset": "morrisUnaryHeb"
+    },
+    {
+      "name": "morrisBiasHeb",
+      "configurePreset": "morrisBiasHeb"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "ieee",
+      "configurePreset": "ieee",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      }
+    },
+    {
+      "name": "ieee64",
+      "configurePreset": "ieee64",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      }
+    },
+    {
+      "name": "posit1",
+      "configurePreset": "posit1",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      }
+    },
+    {
+      "name": "posit2",
+      "configurePreset": "posit2",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      }
+    },
+    {
+      "name": "morris",
+      "configurePreset": "morris",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      }
+    },
+    {
+      "name": "morrisHeb",
+      "configurePreset": "morrisHeb",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      }
+    },
+    {
+      "name": "morrisUnaryHeb",
+      "configurePreset": "morrisUnaryHeb",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      }
+    },
+    {
+      "name": "morrisBiasHeb",
+      "configurePreset": "morrisBiasHeb",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      }
+    }
+  ]
+}

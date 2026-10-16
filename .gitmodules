@@ -1,0 +1,3 @@
+[submodule "nrssl"]
+	path = nrssl
+	url = git@github.com:Albert24GG/nrssl.git

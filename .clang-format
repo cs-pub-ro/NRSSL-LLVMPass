@@ -1,5 +1,15 @@
-# .clang-format
-IndentWidth: 4
+# LLVM style, since this is an LLVM plugin, with a wider line limit.
+BasedOnStyle: LLVM
 ColumnLimit: 100
-NamespaceIndentation: Inner
-BreakTemplateDeclarations: Yes
+AlwaysBreakTemplateDeclarations: Yes
+# project headers first, then LLVM, then JNI, then the standard library
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"'
+    Priority: 1
+  - Regex: '^<llvm/'
+    Priority: 2
+  - Regex: '^<jni'
+    Priority: 3
+  - Regex: '^<'
+    Priority: 4

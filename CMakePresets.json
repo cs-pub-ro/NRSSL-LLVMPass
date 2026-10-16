@@ -1,0 +1,37 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "default",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "NRS_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "tidy",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/tidy",
+      "cacheVariables": { "NRS_ENABLE_CLANG_TIDY": "ON" }
+    },
+    {
+      "name": "ubsan",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/ubsan",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "NRS_ENABLE_UBSAN": "ON" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "default", "configurePreset": "default" },
+    { "name": "tidy", "configurePreset": "tidy" },
+    { "name": "ubsan", "configurePreset": "ubsan" }
+  ],
+  "testPresets": [
+    { "name": "default", "configurePreset": "default", "output": { "outputOnFailure": true } },
+    { "name": "ubsan", "configurePreset": "ubsan", "output": { "outputOnFailure": true } }
+  ]
+}
