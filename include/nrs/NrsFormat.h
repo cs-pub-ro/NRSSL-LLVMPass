@@ -42,20 +42,24 @@ enum class Op : std::uint8_t {
   CvtToUInt,
   CvtFromInt,
   CvtFromUInt,
+
+  NumOps,
 };
 
-inline constexpr std::size_t op_count = static_cast<std::size_t>(Op::CvtFromUInt) + 1;
+inline constexpr std::size_t op_count = static_cast<std::size_t>(Op::NumOps);
 
 struct FormatInfo {
   Format format;
   // Used for the pass parameter and in the intrinsic names.
   std::string_view name;
-  // NRSSL class (JNI name) and the class of its values.
-  std::string_view nrssl_class;
-  std::string_view nrssl_value_class;
+  // NRSSL class (the derived factory class) and the class of its values (the base class that gets
+  // returned). Both hold the JVM names of the classes, e.g. "ro/upb/nrs/sl/Posit" and
+  // "ro/upb/nrs/sl/Posit_B".
+  std::string_view nrs_class;
+  std::string_view nrs_value_class;
   // NRSSL's second apply() parameter for 32-bit values: the exponent size for
   // posit, the size of the G field for Morris. MorrisUnaryHEB has none.
-  std::optional<int> nrssl_parameter;
+  std::optional<int> nrs_apply_extra_param;
   std::array<llvm::Intrinsic::ID, op_count> intrinsics;
 
   [[nodiscard]] constexpr llvm::Intrinsic::ID intrinsic(Op op) const {
@@ -65,6 +69,7 @@ struct FormatInfo {
 
 // The intrinsic IDs are generated per format by the LLVM fork, so they can only
 // be spelled out one by one. Same order as Op.
+// TODO: Replace `nrssl` with `nrs` in the intrinsic names once the LLVM fork is updated.
 #define NRS_INTRINSICS(fmt)                                                                        \
   std::array<llvm::Intrinsic::ID, op_count> {                                                      \
     llvm::Intrinsic::riscv_nrssl_f32_##fmt##_add, llvm::Intrinsic::riscv_nrssl_f32_##fmt##_sub,    \
@@ -82,27 +87,65 @@ struct FormatInfo {
   }
 
 inline constexpr std::array formats{
-    FormatInfo{Format::Posit1, "posit1", "ro/upb/nrs/sl/Posit", "ro/upb/nrs/sl/Posit_B", 2,
-               NRS_INTRINSICS(posit1)},
-    FormatInfo{Format::Posit2, "posit2", "ro/upb/nrs/sl/Posit", "ro/upb/nrs/sl/Posit_B", 3,
-               NRS_INTRINSICS(posit2)},
-    FormatInfo{Format::Morris, "morris", "ro/upb/nrs/sl/Morris", "ro/upb/nrs/sl/Morris_B", 4,
-               NRS_INTRINSICS(morris)},
-    FormatInfo{Format::MorrisHeb, "morrisHeb", "ro/upb/nrs/sl/MorrisHEB",
-               "ro/upb/nrs/sl/MorrisHEB_B", 4, NRS_INTRINSICS(morrisHeb)},
-    FormatInfo{Format::MorrisBiasHeb, "morrisBiasHeb", "ro/upb/nrs/sl/MorrisBiasHEB",
-               "ro/upb/nrs/sl/MorrisBiasHEB_B", 4, NRS_INTRINSICS(morrisBiasHeb)},
-    FormatInfo{Format::MorrisUnaryHeb, "morrisUnaryHeb", "ro/upb/nrs/sl/MorrisUnaryHEB",
-               "ro/upb/nrs/sl/MorrisUnaryHEB_B", std::nullopt, NRS_INTRINSICS(morrisUnaryHeb)},
+    FormatInfo{
+        .format = Format::Posit1,
+        .name = "posit1",
+        .nrs_class = "ro/upb/nrs/sl/Posit",
+        .nrs_value_class = "ro/upb/nrs/sl/Posit_B",
+        .nrs_apply_extra_param = 2,
+        .intrinsics = NRS_INTRINSICS(posit1),
+    },
+    FormatInfo{
+        .format = Format::Posit2,
+        .name = "posit2",
+        .nrs_class = "ro/upb/nrs/sl/Posit",
+        .nrs_value_class = "ro/upb/nrs/sl/Posit_B",
+        .nrs_apply_extra_param = 3,
+        .intrinsics = NRS_INTRINSICS(posit2),
+    },
+    FormatInfo{
+        .format = Format::Morris,
+        .name = "morris",
+        .nrs_class = "ro/upb/nrs/sl/Morris",
+        .nrs_value_class = "ro/upb/nrs/sl/Morris_B",
+        .nrs_apply_extra_param = 4,
+        .intrinsics = NRS_INTRINSICS(morris),
+    },
+    FormatInfo{
+        .format = Format::MorrisHeb,
+        .name = "morrisHeb",
+        .nrs_class = "ro/upb/nrs/sl/MorrisHEB",
+        .nrs_value_class = "ro/upb/nrs/sl/MorrisHEB_B",
+        .nrs_apply_extra_param = 4,
+        .intrinsics = NRS_INTRINSICS(morrisHeb),
+    },
+    FormatInfo{
+        .format = Format::MorrisBiasHeb,
+        .name = "morrisBiasHeb",
+        .nrs_class = "ro/upb/nrs/sl/MorrisBiasHEB",
+        .nrs_value_class = "ro/upb/nrs/sl/MorrisBiasHEB_B",
+        .nrs_apply_extra_param = 4,
+        .intrinsics = NRS_INTRINSICS(morrisBiasHeb),
+    },
+    FormatInfo{
+        .format = Format::MorrisUnaryHeb,
+        .name = "morrisUnaryHeb",
+        .nrs_class = "ro/upb/nrs/sl/MorrisUnaryHEB",
+        .nrs_value_class = "ro/upb/nrs/sl/MorrisUnaryHEB_B",
+        .nrs_apply_extra_param = std::nullopt,
+        .intrinsics = NRS_INTRINSICS(morrisUnaryHeb),
+    },
 };
 
 #undef NRS_INTRINSICS
 
-[[nodiscard]] constexpr const FormatInfo &info(Format format) {
+inline constexpr std::string_view rounding_type_class = "ro/upb/nrs/sl/RoundingType";
+
+[[nodiscard]] constexpr const FormatInfo &get_format_info(Format format) {
   return formats.at(static_cast<std::size_t>(format));
 }
 
-[[nodiscard]] constexpr std::optional<Format> format_from_name(std::string_view name) {
+[[nodiscard]] constexpr std::optional<Format> get_format_from_name(std::string_view name) {
   for (const auto &f : formats) {
     if (f.name == name) {
       return f.format;
@@ -114,7 +157,7 @@ inline constexpr std::array formats{
 // The table is indexed by Format, keep the two in the same order.
 static_assert([] {
   for (std::size_t i = 0; i < formats.size(); ++i) {
-    if (static_cast<std::size_t>(formats.at(i).format) != i) {
+    if (static_cast<std::size_t>(formats[i].format) != i) {
       return false;
     }
   }

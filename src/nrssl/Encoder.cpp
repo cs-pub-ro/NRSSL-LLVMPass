@@ -2,6 +2,7 @@
 
 #include "nrs/NrsFormat.h"
 #include "nrssl/Jvm.h"
+#include "nrssl/JvmHelpers.h"
 
 #include <llvm/ADT/Twine.h>
 #include <llvm/Support/Error.h>
@@ -9,6 +10,7 @@
 #include <jni.h>
 
 #include <array>
+#include <bitset>
 #include <charconv>
 #include <cstdint>
 #include <format>
@@ -24,25 +26,16 @@ llvm::Error error(const llvm::Twine &message) {
   return llvm::createStringError(llvm::inconvertibleErrorCode(), message);
 }
 
-// JNI signature of apply(<input>, [int,] int, RoundingType) -> <value class>.
-std::string apply_signature(const FormatInfo &info, std::string_view input) {
-  std::string signature = "(";
-  signature += input;
-  signature += info.nrssl_parameter ? "II" : "I";
-  signature += "Lro/upb/nrs/sl/RoundingType;)L";
-  signature += info.nrssl_value_class;
-  signature += ";";
-  return signature;
+template <typename T>
+std::string apply_signature(const FormatInfo &info, T &&input_type) {
+  const std::string_view extra_param = info.nrs_apply_extra_param ? jvm_signatures::int_t : "";
+  return jvm_signatures::method_signature(
+      jvm_signatures::class_signature(info.nrs_value_class), std::forward<T>(input_type),
+      jvm_signatures::int_t, extra_param, jvm_signatures::class_signature(rounding_type_class));
 }
 
 std::string to_binary_string(std::uint64_t bits) {
-  std::string binary(static_cast<std::size_t>(Encoder::width), '0');
-  for (std::size_t i = 0; i < binary.size(); ++i) {
-    if (((bits >> i) & 1U) != 0) {
-      binary[binary.size() - 1 - i] = '1';
-    }
-  }
-  return binary;
+  return std::bitset<Encoder::width>(bits).to_string();
 }
 
 } // namespace
@@ -54,25 +47,30 @@ llvm::Expected<Encoder> Encoder::create(Format format, Jvm &jvm) {
   }
   JNIEnv &env = *env_or_error;
   const LocalFrame frame(env);
-  const FormatInfo &info = nrs::info(format);
+  const FormatInfo &info = nrs::get_format_info(format);
   Encoder encoder(info, jvm);
 
-  const std::string nrs_class(info.nrssl_class);
-  const std::string value_class(info.nrssl_value_class);
+  const std::string nrs_class(info.nrs_class);
+  const std::string value_class(info.nrs_value_class);
   jclass cls = env.FindClass(nrs_class.c_str());
   jclass value_cls = env.FindClass(value_class.c_str());
   if (auto err = take_exception(env, llvm::Twine("NRSSL class ") + nrs_class)) {
     return std::move(err);
   }
 
-  const std::string rounding_signature = "()Lro/upb/nrs/sl/RoundingType;";
-  jmethodID default_rounding =
-      env.GetStaticMethodID(cls, "default_rounding", rounding_signature.c_str());
-  encoder.apply_double_ = env.GetStaticMethodID(cls, "apply", apply_signature(info, "D").c_str());
+  jmethodID default_rounding = env.GetStaticMethodID(
+      cls, "default_rounding",
+      jvm_signatures::method_signature(jvm_signatures::class_signature(rounding_type_class))
+          .c_str());
+  encoder.apply_double_ =
+      env.GetStaticMethodID(cls, "apply", apply_signature(info, jvm_signatures::double_t).c_str());
   encoder.apply_string_ =
-      env.GetStaticMethodID(cls, "apply", apply_signature(info, "Ljava/lang/String;").c_str());
-  encoder.to_binary_string_ = env.GetMethodID(value_cls, "toBinaryString", "()Ljava/lang/String;");
-  encoder.to_double_ = env.GetMethodID(value_cls, "toDouble", "()D");
+      env.GetStaticMethodID(cls, "apply", apply_signature(info, jvm_signatures::string_t).c_str());
+  encoder.to_binary_string_ =
+      env.GetMethodID(value_cls, "toBinaryString",
+                      jvm_signatures::method_signature(jvm_signatures::string_t).c_str());
+  encoder.to_double_ = env.GetMethodID(
+      value_cls, "toDouble", jvm_signatures::method_signature(jvm_signatures::double_t).c_str());
   if (auto err = take_exception(env, llvm::Twine("NRSSL methods of ") + nrs_class)) {
     return std::move(err);
   }
@@ -89,12 +87,12 @@ llvm::Expected<Encoder> Encoder::create(Format format, Jvm &jvm) {
 jobject Encoder::apply(JNIEnv &env, jmethodID method, jvalue value) const {
   std::array<jvalue, 4> args{};
   std::size_t n = 0;
-  args.at(n++) = value;
-  if (info_->nrssl_parameter) {
-    args.at(n++).i = *info_->nrssl_parameter;
+  args[n++] = value;
+  if (info_->nrs_apply_extra_param) {
+    args[n++].i = *info_->nrs_apply_extra_param;
   }
-  args.at(n++).i = width;
-  args.at(n).l = rounding_.get();
+  args[n++].i = width;
+  args[n].l = rounding_.get();
   return env.CallStaticObjectMethodA(class_.get_class(), method, args.data());
 }
 
@@ -112,12 +110,12 @@ llvm::Expected<std::uint64_t> Encoder::encode(double value) const {
   jstring binary = nrs_value != nullptr
                        ? as_string(env.CallObjectMethodA(nrs_value, to_binary_string_, nullptr))
                        : nullptr;
-  if (auto err = take_exception(env, llvm::Twine("encoding ") + std::format("{}", value) + " as " +
+  if (auto err = take_exception(env, llvm::Twine("encoding ") + std::to_string(value) + " as " +
                                          llvm::StringRef(info_->name))) {
     return std::move(err);
   }
   if (binary == nullptr) {
-    return error(llvm::Twine("NRSSL returned nothing encoding ") + std::format("{}", value));
+    return error(llvm::Twine("NRSSL returned nothing encoding ") + std::to_string(value));
   }
 
   const Utf8Chars chars(env, binary);

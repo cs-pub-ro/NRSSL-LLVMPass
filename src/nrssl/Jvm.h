@@ -7,7 +7,6 @@
 
 #include <jni.h>
 
-#include <array>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -50,9 +49,8 @@ class LocalFrame {
 public:
   static constexpr jint default_capacity = 16;
 
-  explicit LocalFrame(JNIEnv &env, jint capacity = default_capacity) : env_(&env) {
-    ok_ = env.PushLocalFrame(capacity) == JNI_OK;
-  }
+  explicit LocalFrame(JNIEnv &env, jint capacity = default_capacity)
+      : env_(&env), ok_(env.PushLocalFrame(capacity) == JNI_OK) {}
   ~LocalFrame() {
     if (ok_) {
       env_->PopLocalFrame(nullptr);

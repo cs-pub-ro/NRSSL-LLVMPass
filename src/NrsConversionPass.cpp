@@ -39,7 +39,7 @@ void module_error(llvm::Module &module, const llvm::Twine &message) {
 
 llvm::PreservedAnalyses NrsConversionPass::run(llvm::Module &module,
                                                llvm::ModuleAnalysisManager & /*analyses*/) {
-  const FormatInfo &format = info(format_);
+  const FormatInfo &format = get_format_info(format_);
 
   if (const auto *flag =
           llvm::dyn_cast_or_null<llvm::MDString>(module.getModuleFlag(format_flag))) {
@@ -60,6 +60,7 @@ llvm::PreservedAnalyses NrsConversionPass::run(llvm::Module &module,
   ConstantConverter constants(*encoder);
   InstructionLowering lowering(format, constants);
 
+  // Convert the initializers of global variables first
   for (llvm::GlobalVariable &global : module.globals()) {
     if (!global.hasInitializer()) {
       continue;
@@ -73,6 +74,8 @@ llvm::PreservedAnalyses NrsConversionPass::run(llvm::Module &module,
     global.setInitializer(*converted);
   }
 
+  // Then convert the operands of every suitable instruction and replace the instructions with calls
+  // to the NRS intrinsics
   for (llvm::Function &function : module) {
     bool warned_ieee = false;
     for (llvm::Instruction &inst : llvm::make_early_inc_range(llvm::instructions(function))) {

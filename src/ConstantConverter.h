@@ -20,7 +20,7 @@ public:
   [[nodiscard]] llvm::Expected<llvm::Constant *> convert(llvm::Constant &constant);
 
   // NRS zero as an f32 constant.
-  [[nodiscard]] llvm::Expected<llvm::Constant *> zero(llvm::LLVMContext &context);
+  [[nodiscard]] llvm::Expected<llvm::Constant *> zero_f32(llvm::LLVMContext &context);
 
 private:
   [[nodiscard]] llvm::Expected<llvm::Constant *> convert_uncached(llvm::Constant &constant);

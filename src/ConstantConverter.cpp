@@ -41,7 +41,7 @@ llvm::Expected<llvm::Constant *> ConstantConverter::convert(llvm::Constant &cons
   return converted;
 }
 
-llvm::Expected<llvm::Constant *> ConstantConverter::zero(llvm::LLVMContext &context) {
+llvm::Expected<llvm::Constant *> ConstantConverter::zero_f32(llvm::LLVMContext &context) {
   return convert(*llvm::ConstantFP::get(llvm::Type::getFloatTy(context), 0.0));
 }
 

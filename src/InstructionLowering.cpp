@@ -31,7 +31,7 @@ bool is_f32_vector(const llvm::Type &type) {
 }
 
 // The floating point type an instruction computes with, if any.
-const llvm::Type *fp_type(const llvm::Instruction &inst) {
+const llvm::Type *get_fp_type(const llvm::Instruction &inst) {
   switch (inst.getOpcode()) {
   case llvm::Instruction::FAdd:
   case llvm::Instruction::FSub:
@@ -88,7 +88,7 @@ llvm::Expected<Lowering> InstructionLowering::lower(llvm::Instruction &inst) {
       return Lowering::ExternalCall;
     }
   }
-  if (const llvm::Type *type = fp_type(inst); type != nullptr && !is_f32(*type)) {
+  if (const llvm::Type *type = get_fp_type(inst); type != nullptr && !is_f32(*type)) {
     return Lowering::KeptIeee;
   }
   return Lowering::Unchanged;
@@ -97,10 +97,11 @@ llvm::Expected<Lowering> InstructionLowering::lower(llvm::Instruction &inst) {
 llvm::Error InstructionLowering::convert_constant_operands(llvm::Instruction &inst) {
   for (llvm::Use &use : inst.operands()) {
     auto *constant = llvm::dyn_cast<llvm::Constant>(use.get());
+    // Globals were already converted separately
     if (constant == nullptr || llvm::isa<llvm::GlobalValue>(constant)) {
       continue;
     }
-    auto converted = constants_->convert(*constant);
+    auto converted = const_converter_->convert(*constant);
     if (!converted) {
       return converted.takeError();
     }
@@ -117,7 +118,7 @@ namespace {
 class Emitter {
 public:
   Emitter(llvm::Instruction &inst, const FormatInfo &format, ConstantConverter &constants)
-      : builder_(&inst), module_(inst.getModule()), format_(&format), constants_(&constants),
+      : builder_(&inst), module_(inst.getModule()), format_(&format), const_converter_(&constants),
         context_(&inst.getContext()) {}
 
   llvm::Value *call(Op op, llvm::ArrayRef<llvm::Value *> args) {
@@ -131,7 +132,7 @@ public:
   }
 
   // NRS zero as an f32 constant.
-  llvm::Expected<llvm::Constant *> zero() { return constants_->zero(*context_); }
+  llvm::Expected<llvm::Constant *> zero() { return const_converter_->zero_f32(*context_); }
 
   // 0 - x, the sign bit alone is not the sign in every format.
   llvm::Expected<llvm::Value *> negate(llvm::Value *x) {
@@ -148,7 +149,7 @@ private:
   llvm::IRBuilder<> builder_;
   llvm::Module *module_;
   const FormatInfo *format_;
-  ConstantConverter *constants_;
+  ConstantConverter *const_converter_;
   llvm::LLVMContext *context_;
 };
 
@@ -255,11 +256,11 @@ llvm::Expected<llvm::Value *> lower_intrinsic(llvm::IntrinsicInst &intrinsic, Em
 
 // The value that replaces inst, nullptr if inst is not an f32 operation.
 llvm::Expected<llvm::Value *> InstructionLowering::replacement(llvm::Instruction &inst) {
-  const llvm::Type *type = fp_type(inst);
+  const llvm::Type *type = get_fp_type(inst);
   if (type != nullptr && is_f32_vector(*type)) {
     return unsupported("vector f32 operations are not supported");
   }
-  Emitter emit(inst, *format_, *constants_);
+  Emitter emit(inst, *format_, *const_converter_);
 
   switch (inst.getOpcode()) {
   case llvm::Instruction::FAdd:

@@ -8,6 +8,7 @@
 #include <llvm/IR/PassManager.h>
 
 #include <string>
+#include <string_view>
 
 namespace nrs {
 
@@ -26,7 +27,7 @@ public:
 
   // Module flag that records the format, a second conversion would corrupt
   // the constants.
-  static constexpr const char *format_flag = "nrs.format";
+  static constexpr std::string_view format_flag = "nrs.format";
 
 private:
   Format format_;

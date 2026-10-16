@@ -32,9 +32,9 @@ TEST_CASE("every format maps each op to llvm.riscv.nrssl.f32.<format>.<op>") {
 
 TEST_CASE("formats can be looked up by name") {
   for (const auto &format : nrs::formats) {
-    CHECK(nrs::format_from_name(format.name) == format.format);
-    CHECK(&nrs::info(format.format) == &format);
+    CHECK(nrs::get_format_from_name(format.name) == format.format);
+    CHECK(&nrs::get_format_info(format.format) == &format);
   }
-  CHECK_FALSE(nrs::format_from_name("ieee").has_value());
-  CHECK_FALSE(nrs::format_from_name("Posit1").has_value());
+  CHECK_FALSE(nrs::get_format_from_name("ieee").has_value());
+  CHECK_FALSE(nrs::get_format_from_name("Posit1").has_value());
 }

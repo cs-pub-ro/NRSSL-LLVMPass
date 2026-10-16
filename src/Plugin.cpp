@@ -15,10 +15,11 @@
 
 namespace {
 
-constexpr llvm::StringRef pass_name = "nrs-convert";
+constexpr llvm::StringLiteral pass_name = "nrs-convert";
+constexpr llvm::StringLiteral plugin_name = "NRSConversion";
 
 llvm::Expected<nrs::Format> parse_format(llvm::StringRef parameter) {
-  if (auto format = nrs::format_from_name(parameter)) {
+  if (auto format = nrs::get_format_from_name(parameter)) {
     return *format;
   }
   std::string names;
@@ -55,10 +56,11 @@ bool add_pass(llvm::StringRef name, llvm::ModulePassManager &passes,
 
 // NOLINTNEXTLINE(readability-identifier-naming): entry point looked up by LLVM
 extern "C" LLVM_ATTRIBUTE_WEAK llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() {
-  return {.APIVersion = LLVM_PLUGIN_API_VERSION,
-          .PluginName = "NRSConversion",
-          .PluginVersion = LLVM_VERSION_STRING,
-          .RegisterPassBuilderCallbacks = [](llvm::PassBuilder &builder) {
-            builder.registerPipelineParsingCallback(add_pass);
-          }};
+  return {
+      .APIVersion = LLVM_PLUGIN_API_VERSION,
+      .PluginName = plugin_name.data(),
+      .PluginVersion = LLVM_VERSION_STRING,
+      .RegisterPassBuilderCallbacks =
+          [](llvm::PassBuilder &builder) { builder.registerPipelineParsingCallback(add_pass); },
+  };
 }

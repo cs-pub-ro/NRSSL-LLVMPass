@@ -16,7 +16,7 @@ namespace nrs::nrssl {
 class Encoder {
 public:
   // Values are 32 bits wide, the only width the pass supports.
-  static constexpr int width = 32;
+  static constexpr std::uint32_t width = 32;
 
   // Looks up the NRSSL classes and methods of the format once.
   static llvm::Expected<Encoder> create(Format format, Jvm &jvm);

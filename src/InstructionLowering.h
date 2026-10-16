@@ -27,8 +27,8 @@ enum class Lowering : std::uint8_t {
 
 class InstructionLowering {
 public:
-  InstructionLowering(const FormatInfo &format, ConstantConverter &constants)
-      : format_(&format), constants_(&constants) {}
+  InstructionLowering(const FormatInfo &format, ConstantConverter &const_converter)
+      : format_(&format), const_converter_(&const_converter) {}
 
   // Converts the f32 constants the instruction uses, then replaces it if it is
   // an f32 operation. Fails for f32 operations without an NRS equivalent and
@@ -40,7 +40,7 @@ private:
   [[nodiscard]] llvm::Expected<llvm::Value *> replacement(llvm::Instruction &inst);
 
   const FormatInfo *format_;
-  ConstantConverter *constants_;
+  ConstantConverter *const_converter_;
 };
 
 } // namespace nrs

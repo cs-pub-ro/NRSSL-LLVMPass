@@ -1,13 +1,14 @@
 #include "nrssl/Jvm.h"
 
+#include "nrssl/JvmHelpers.h"
+
 #include <llvm/Support/Error.h>
 
 #include <jni.h>
 
 #include <array>
-#include <optional>
+#include <format>
 #include <string>
-#include <string_view>
 
 namespace nrs::nrssl {
 
@@ -42,8 +43,8 @@ JavaVM *existing_vm() {
 
 llvm::Expected<JavaVM &> start_vm(const std::string &jars_dir) {
   // JavaVMOption wants a mutable string
-  std::string class_path =
-      "-Djava.class.path=" + jars_dir + "/" + std::string(scala_library_jar) + ":" + jars_dir + "/" + std::string(nrssl_jar);
+  std::string class_path = std::format("-Djava.class.path={}/{}:{}/{}", jars_dir, scala_library_jar,
+                                       jars_dir, nrssl_jar);
   std::array<JavaVMOption, 1> options{};
   options[0].optionString = class_path.data();
 
@@ -102,10 +103,12 @@ llvm::Error take_exception(JNIEnv &env, const llvm::Twine &context) {
   env.ExceptionClear();
 
   std::string message = "unknown Java exception";
-  jclass object_class = env.FindClass("java/lang/Object");
-  jmethodID to_string = object_class != nullptr
-                            ? env.GetMethodID(object_class, "toString", "()Ljava/lang/String;")
-                            : nullptr;
+  jclass object_class = env.FindClass(jvm_types::Object.data());
+  jmethodID to_string =
+      object_class != nullptr
+          ? env.GetMethodID(object_class, "toString",
+                            jvm_signatures::method_signature(jvm_signatures::string_t).c_str())
+          : nullptr;
   if (to_string != nullptr) {
     jstring text = as_string(env.CallObjectMethodA(exception, to_string, nullptr));
     if (text != nullptr) {

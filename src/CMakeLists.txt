@@ -16,6 +16,7 @@ target_sources(nrs_core
             InstructionLowering.h
             nrssl/Encoder.h
             nrssl/Jvm.h
+            nrssl/JvmHelpers.h
 
     PUBLIC
         FILE_SET HEADERS
